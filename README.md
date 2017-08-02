@@ -16,9 +16,7 @@ commercial alternatives exist.
 ## Benchmark Test
 
 A performance benchmark was conducted on these two tools. The target was to
-support 400 concurrent visits to this [application](). The application is
-light-weight, but allows users to select parameters and solve a system of
-ordinary differential equations representing a disease spread model.
+support 400 concurrent visits to a moderately complex shiny app.
 
 Shiny relies on Javascript to respond to user interactions and communicate with
 R as opposed to RESTful HTTP calls. This means standard load
@@ -30,21 +28,19 @@ interactions.
 
 An m4.4xlarge node (64 cores total) was used to drive the 400 simultaneous
 browsers used during the tests. The application code and test script are
-available [here]().
+available [here](https://github.com/slopp/Load-Test).
 
 
 ## Open Source Shiny Server and Docker Swarm
 
 ### Setup: 
 
-4 m4.xlarge Worker Nodes (16 vCPU,  GiB RAM total)
-1 t2.micro Manager Node (1 CPU, 2 GiB RAM)
+- 4 m4.xlarge Worker Nodes (16 vCPU,  GiB RAM total)
+- 1 t2.micro Manager Node (1 CPU, 2 GiB RAM)
 
-A Dockerfile and [Image]() were created that included R, the R packages required
+A Dockerfile and [Image](https://hub.docker.com/r/slopp/sir_app/) were created that included R, the R packages required
 by the application, and download, install, and configuration steps for Open
-Source Shiny Server.
-
-Docker was installed on each node. A docker swarm was started on the manager
+Source Shiny Server. Docker was installed on each node. A docker swarm was started on the manager
 node. Each worker node was registered to the swarm.
 
 In Open Source Shiny Server, each application is backed by 1 R process.
@@ -52,14 +48,14 @@ In order to scale an application, it is necessary to add additional instances of
 Open Source Shiny Server, 1 for each desired R process. 
 
 To support 400 concurrent users, I setup 100 containers running across the 4
-worker nodes. This setup leads to 4 connections per R process is a standard
-concurrency rate for most Shiny apps. See [this article]() to
+worker nodes. This setup targets 4 connections per R process, which is a standard
+concurrency rate for most Shiny apps. See [this article](http://shiny.rstudio.com/articles/scoping.html) to
 understand how multiple connections can share a single R process. 
 
 The final step is load balancing. In this setup, load balancing is tricky
 because it is necessary to send requests across multiple machines and
 multiple containers per machine while maintaining the sticky sessions
-required by Shiny. To do so, a Traefik load balancer was configured on the
+required by Shiny. To do so, a [Traefik load balancer](https://traefik.io/) was configured on the
 manager node. Traefik is a unique load balancer capable of managing traffic *at
 the Docker network layer* and has support for cookie-based sticky sessions.
 
@@ -67,48 +63,46 @@ A Docker compose YAML file was used to organize the Traefik load balancer and
 the Docker images containing R, the app, and Shiny Server. Docker stack was used
 to deploy across the swarm.
 
-![](architecture_diagram.jpg)
+![](imgs/swarm_architecture.jpeg)
 
 ### Results
 
-Of the 400 targetted concurrent connections, only 104 connections were
-successful. The 104 connections ran with minimal latency compared to a baseline
-test of the application without load.
+Of the 400 targetted concurrent connections, only **104 connections were
+successful, with a peak of 94 concurrent connections**. The 104 connections ran with minimal latency compared to a baseline
+test, but with significantly higher page load times.
 
-![](latency_swarm.jpg)
+![](imgs/swarm_results.jpeg)
 
-Throughout the test requests were successfully routed across the swarm, and all
-worker nodes hit 100% CPU utilization. 
-
-The micro manager node serving the Traefik load balancer did not reach CPU or
+Requests were successfully routed across the swarm and all
+worker nodes hit 100% CPU utilization. The micro manager node serving the Traefik load balancer did not reach CPU or
 memory thresholds.
 
 The 296 failed connections all timed out, meaning the Shiny application did not
-respond within the allocated minute of page load time. This usually occurs when
-the R process assigned to a connection is busy performing calculations for the
-other shared connections and unable to process the initial connection request.
+respond within the maximum page load time. Timeouts usually occur when
+the R process assigned to a new connection is busy responding to existing shared connections and unable to accept the incoming initilization request.
 
 One approach to solving this problem would be to add additional containers to
-reduce the number of connections per R process. In our test, all 4 machines were
-maxed out on CPU supporting the 100 containers, so in addition to adding
-containers it would likely be necessary to add more worker nodes.
+reduce the targetted number of connections per R process. However, all 4 machines were
+maxed out on CPU supporting the 100 containers, so it is unlikely that adding more containers would have helped without adding additional worker nodes.
 
 ## RStudio Connect
 
 ### Setup:
 
-4 m4.large Nodes (16 cores, GiB total)
-1 RDS Postgres DB
-1 ELB
-1 EFS Volume (NFSv4)
+- 4 m4.xlarge Nodes (16 cores, GiB total)
+- 1 RDS Postgres DB
+- 1 ELB
+- 1 EFS Volume (NFSv4)
 
 RStudio Connect is a commercial product designed to make it easy to publish and
 deploy R-based content including Shiny applications.
 
-In our setup, a AMI was created containing R and RStudio Connect. The AMI was
+In our setup, an AMI was created containing R and RStudio Connect. The AMI was
 launched on the 4 nodes which were placed into an ELB target group. Sticky
-sessions was enabled on the ELB. Each instance of Connect was configured to use
+sessions were enabled on the ELB. Each instance of Connect was configured to use
 the RDS based Postgres DB and each node mounted the EFS share.
+
+![](imgs/connect_architecture.jpeg)
 
 Deploying the application to the cluster was done through a single push-button
 deployment step. Connect ensures package dependencies are resolved and deploys
@@ -119,34 +113,34 @@ interface to start 80 R processes across the cluster.
 
 ## Results
 
-Of the 400 concurrent users, 375 had successful sessions. Page load latency was
-higher than a baseline test without load, but interactions with the application
-under load were with 1-2 seconds of normal response times.
+Of the 400 concurrent users, **375 had successful sessions with a peak of 343 concurrent connections**. Page load time was
+higher than the baseline test, but the user interactions remained responsive.
 
+During the load test all 4 nodes reach 100% CPU, so it is possible that adding a 5th node would have enabled 400 concurrent sessions.
+
+![](imgs/connect_results.jpeg)
 
 ## Key Takeaways
 
 As a framework, Shiny has the capacity to scale horizontally. For a reasonably
-complex test (solving a system of differential equations multiple times), a 4
-node, 16 core cluster was able to support 100 concurrent users on an open-source
-stack and 395 concurrent users with RStudio Connect.
+complex app, 
+
+> a 4
+node, 16 core cluster was able to support 104 simultaneous users on an open-source
+stack and 395 simultaneous users with RStudio Connect.
 
 The main technical limitation in scaling open source shiny server was the
-overheads in running shiny server and a Docker container for each R process.
-Basically, 3 processes for each R process. In contrast, RStudio Connect includes
-the networking support to scale R processes with 3x less overhead.
+overhead in running shiny server and Docker for each additional R process. In contrast, RStudio Connect includes
+the networking support to scale R processes directly.
 
-Bigger than the technical limitation was the maintenance and setup overhead. To
-run the open source stack required a steep learning curve and the cooperation
-of 4 moving open source tools: Traefik, Shiny Server, R, and Docker Swarm.
-Changes to any of these tools could require hours of developer time in future
-maintenance in addition to the initial time required to setup the stack.
-The push-button deployment was also a time saver compared to creating a
-Docker image, especially since the Docker image required identifying all package
-dependencies manually. Future updates to the application would encounter the
-same time savings. While licensing costs for RStudio Connect are higher than the
-open source stack's $0 price tag, the labor costs (of either DevOps or
-consultants) to maintain the open source stack is arguably equal.
+Bigger than the technical limitation was the maintenance and setup overhead. The open source stack had a steeper learning curve and required the co-operation
+of 4 open source tools: Traefik, Shiny Server, R, and Docker Swarm.
+Changes to any of these tools would require developer maintenance time.
+Connect's push-button deployment also enables a much faster development time compared to iteratations that required creating a
+Docker image and manually identifying package
+dependencies. 
+
+> RStudio Connect's licensing cost should be weighed against the larger labor costs needed to maintain an open source stack..
 
 
 

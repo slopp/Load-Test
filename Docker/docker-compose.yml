@@ -10,7 +10,7 @@ services:
       - "80"
     deploy:
       mode: replicated
-      replicas: 5
+      replicas: 100
       placement:
         constraints: [node.role == worker]
       labels:
