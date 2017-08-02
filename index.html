@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<!-- index.html -->
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Zombie Apocolaypse</title>
+
+    <!-- load stylesheets -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400">
+    <link rel="stylesheet" href="css/magnific-popup.css">                       
+    <link rel="stylesheet" href="css/templatemo-style.css">
+    
+    {{ headContent() }}
+    {{ bootstrapLib() }}
+
+</head>
+<body>        
+        <div class="container">
+            <div class="row">
+                <div class="tm-left-right-container">
+                    <!-- Left column: logo and menu -->
+                    <div class="tm-blue-bg tm-left-column">                        
+                        <div class="tm-logo-div text-xs-center">
+                            <img src="img/geek_zombie.png" alt="Logo">
+                            <h1 class="tm-site-name">Zombie Apocolaypse</h1>
+                        </div>
+                        <nav class="tm-main-nav">
+                            <ul class="tm-main-nav-ul">
+                                <li class="tm-nav-item">
+                                    <a href="#zombie" class="tm-nav-item-link">Model</a>
+                                </li>
+                                <li class="tm-nav-item">
+                                    <a href="#results" class="tm-nav-item-link">Results</a>
+                                </li>
+                                <li class="tm-nav-item">
+                                    <a href="#controls" class="tm-nav-item-link">Controls</a>
+                                </li>
+                                
+                            </ul>
+                        </nav>                                         
+                    </div> <!-- Left column: logo and menu -->
+                    
+                    <!-- Right column: content -->
+                    <div class="tm-right-column">
+                        
+                        <div class="tm-content-div">
+                            <!-- Welcome section -->
+                            <section id="zombie" class="tm-section">
+                                <header>
+                                    <h2 class="tm-blue-text tm-welcome-title tm-margin-b-45">Modelling a Zombie Apocolaypse with SIR</h2>
+                                </header>
+                                <p> Would humans survive a Zombie Apocolaypse? To answer that question, data scientists often refer to the SIR disease model. The model is simple - there are 3 types of actors is on our post-apocolayptic world: Humans, Zombies, and the Dean. (Originally labelled "S", "I", and "R", our model is more appropriately abbreviated as the HZD model). In the model, the drama plays out pretty simply. If a Human meets a Zombie, they become a Zombie. After a certain amount of time, Zombies die of their own accord. Whether the human race lives or dies depends on how frequently Zombies meet Humans, and how frequently Zombies die. Change these parameters below to see if you'll survive! </p>
+                            </section>
+                            
+                            <section id="results" class="tm-section">
+                                <header><h2 class="tm-blue-text tm-section-title tm-margin-b-30">Results</h2></header>
+                                <div class="tm-gallery-container tm-gallery-1">
+                                
+                                   
+                                      {{ res_plot }}
+                                </div>
+                                
+                                <div class="tm-gallery-container tm-gallery-2">
+                                      {{ txt_output }}
+                                    
+                                </div>
+                            </section>
+                            
+                          
+                            <section id="controls" class="tm-section">
+                                <div class="row">                                                                
+                                    <div class="col-lg-8 col-md-7 col-sm-12 col-xs-12 push-lg-4 push-md-5">
+                                        <header>
+                                            <h2 class="tm-blue-text tm-section-title tm-margin-b-45">Controls</h2>
+                                        </header>
+                                        
+                                        
+                                          
+                                       
+                                        {{ beta_slider }} 
+                                        {{ gamma_slider }}
+                                        {{ reset_button }}
+
+                                    </div>
+                                    
+                                    <div class="col-lg-4 col-md-5 col-sm-12 col-xs-12 pull-lg-8 pull-md-7 tm-about-img-container">
+                                        <img src="img/gears.png" class="img-fluid">
+                                    </div>
+
+                                </div>                            
+                            </section>  
+
+                            
+
+
+
+                            <!-- Contact Us section -->
+                         
+                            <footer>
+                                <p class="tm-copyright-p">Copyright &copy; <span class="tm-current-year">2017</span> RStudio, Inc
+                                
+                            </footer>
+                        </div>  
+                        
+                    </div> <!-- Right column: content -->
+                </div>
+            </div> <!-- row -->
+        </div> <!-- container -->
+                
+        <!-- load JS files -->
+        <!-- <script src="js/jquery-1.11.3.min.js"></script>             <!-- jQuery (https://jquery.com/download/) -->
+        <script src="js/jquery.magnific-popup.min.js"></script>     <!-- Magnific pop-up (http://dimsemenov.com/plugins/magnific-popup/) -->
+        <script src="js/jquery.singlePageNav.min.js"></script>      <!-- Single Page Nav (https://github.com/ChrisWojcik/single-page-nav) -->
+      
+        <script>     
+       
+            $(document).ready(function(){
+
+                // Single page nav
+                $('.tm-main-nav').singlePageNav({
+                    'currentClass' : "active",
+                    offset : 20
+                });
+
+                // Magnific pop up
+                $('.tm-gallery-1').magnificPopup({
+                  delegate: 'a', // child items selector, by clicking on it popup will open
+                  type: 'image',
+                  gallery: {enabled:true}
+                  // other options
+                }); 
+              
+                
+
+
+                $('.tm-current-year').text(new Date().getFullYear());                
+            });
+        </script>             
+</body>
+</html>

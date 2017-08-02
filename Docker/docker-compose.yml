@@ -1,0 +1,43 @@
+version: "3"
+
+services:
+ 
+  sir_app:
+    image: slopp/sir_app
+    networks:
+      - net
+    ports:
+      - "80"
+    deploy:
+      mode: replicated
+      replicas: 5
+      placement:
+        constraints: [node.role == worker]
+      labels:
+        - "traefik.docker.network=ssp_net"
+        - "traefik.port=80"
+        - "traefik.frontend.rule=PathPrefix:/sir;"
+        - "traefik.backend.loadbalancer.sticky=true"
+
+  loadbalancer:
+    image: traefik
+    command: --docker \
+      --docker.swarmmode \
+      --docker.watch \
+      --web \
+      --loglevel=DEBUG
+    ports:
+        - 80:80
+        - 3939:8080
+    volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - net
+
+networks:
+  net:
